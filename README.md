@@ -7,8 +7,8 @@ Python library for interfacing the Glottolog database
 
 ## Usage
 
-The API is quite simple, please see (examples/relatives.py) for an example of
-how to use it.
+The API is quite simple, please see [relatives.py](examples/relatives.py)
+for an example of how to use it.
 
 ## Regenerating the database
 
