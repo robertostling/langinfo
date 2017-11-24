@@ -58,12 +58,15 @@ class GlottologDatabase:
         for k in ['wals', 'multitree', 'name']: self._add_index(k, False)
 
         re_tree_name = re.compile('.+?\s+\[(\w+)\]')
-        def index_tree(tree):
+        def index_tree(tree, seen=set()):
+            assert tree.name not in seen, (tree.name, seen)
             m = re_tree_name.match(tree.name)
             assert m
             l = self.id_index.get(m.group(1))
             if l:
-                children = [index_tree(child) for child in tree.descendants]
+                children = [index_tree(child, seen=seen|{tree.name})
+                            for child in tree.descendants
+                            if child.name not in seen|{tree.name}]
                 assert not any(child is None for child in children)
                 l.children = children
                 for child in children:
