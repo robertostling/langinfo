@@ -110,7 +110,7 @@ class GlottologDatabase:
 def build_database():
     return GlottologDatabase.read(
             os.path.join(DATA_PATH, 'languoid.csv'),
-            os.path.join(DATA_PATH, 'tree-glottolog-newick.txt'),
+            os.path.join(DATA_PATH, 'tree_glottolog_newick.txt'),
             os.path.join(DATA_PATH, 'resourcemap.json'))
 
 
