@@ -35,8 +35,9 @@ class Languoid:
 
 
 class GlottologDatabase:
-    def __init__(self, languoids, trees, mapping):
+    def __init__(self, languoids, mapping):
         self.languoids = languoids
+        self.glottocode_languoids = {l.id: l for l in languoids}
 
         for k in ['hid', 'id']: self._add_index(k)
 
@@ -57,23 +58,13 @@ class GlottologDatabase:
         for k in ['iso639_3']: self._add_index(k)
         for k in ['wals', 'multitree', 'name']: self._add_index(k, False)
 
-        re_tree_name = re.compile('.+?\s+\[(\w+)\]')
-        def index_tree(tree, seen=set()):
-            assert tree.name not in seen, (tree.name, seen)
-            m = re_tree_name.match(tree.name)
-            assert m
-            l = self.id_index.get(m.group(1))
-            if l:
-                children = [index_tree(child, seen=seen|{tree.name})
-                            for child in tree.descendants
-                            if child.name not in seen|{tree.name}]
-                assert not any(child is None for child in children)
-                l.children = children
-                for child in children:
-                    child.parent = l
-            return l
+        for l in self.languoids:
+            if l.parent_id:
+                l.parent = self.glottocode_languoids[l.parent_id]
+                l.parent.children.append(l)
 
-        self.toplevel = [index_tree(tree) for tree in trees]
+        self.toplevel = [l for l in self.languoids
+                         if l.level == 'family' and l.parent is None]
 
     def __getitem__(self, k):
         for index in (self.id_index, self.iso639_3_index, self.name_index):
@@ -97,23 +88,19 @@ class GlottologDatabase:
         setattr(self, k+'_index', index)
 
     @staticmethod
-    def read(languoid_file, tree_file, alias_file):
-        import newick
-        with open(tree_file, 'r', encoding='utf-8') as f:
-            trees = newick.load(f)
+    def read(languoid_file, alias_file):
         with open(languoid_file, newline='') as f:
             reader = csv.reader(f, delimiter=',', quotechar='"')
             header = next(reader)
             languoids = [Languoid(**dict(zip(header, row))) for row in reader]
         with open(alias_file, 'r', encoding='utf-8') as f:
             mapping = json.load(f)
-        return GlottologDatabase(languoids, trees, mapping)
+        return GlottologDatabase(languoids, mapping)
 
 
 def build_database():
     return GlottologDatabase.read(
             os.path.join(DATA_PATH, 'languoid.csv'),
-            os.path.join(DATA_PATH, 'tree_glottolog_newick.txt'),
             os.path.join(DATA_PATH, 'resourcemap.json'))
 
 
