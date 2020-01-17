@@ -50,6 +50,9 @@ class GlottologDatabase:
         for resource in mapping['resources']:
             identifiers = resource['identifiers']
             if identifiers:
+                if resource['id'] not in self.id_index:
+                    print('WARNING:', resource['id'], 'not found')
+                    continue
                 l = self.id_index[resource['id']]
                 for identifier in identifiers:
                     name = ident_map.get(identifier['type'])
