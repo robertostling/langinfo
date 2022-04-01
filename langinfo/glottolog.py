@@ -35,9 +35,9 @@ class Languoid:
 
 
 class GlottologDatabase:
-    def __init__(self, languoids, mapping):
-        self.languoids = languoids
-        self.glottocode_languoids = {l.id: l for l in languoids}
+    def __init__(self, glottocode_languoids, mapping):
+        self.languoids = list(glottocode_languoids.values())
+        self.glottocode_languoids = glottocode_languoids
 
         for k in ['hid', 'id']: self._add_index(k)
 
@@ -91,11 +91,20 @@ class GlottologDatabase:
         setattr(self, k+'_index', index)
 
     @staticmethod
-    def read(languoid_file, alias_file):
+    def read(languoid_file, geo_file, alias_file):
+        languoids = {}
         with open(languoid_file, newline='') as f:
             reader = csv.reader(f, delimiter=',', quotechar='"')
             header = next(reader)
-            languoids = [Languoid(**dict(zip(header, row))) for row in reader]
+            for row in reader:
+                l = Languoid(**dict(zip(header, row)))
+                languoids[l.id] = l
+        with open(geo_file, newline='') as f:
+            reader = csv.DictReader(f, delimiter=',', quotechar='"')
+            for row in reader:
+                if row['glottocode'] in languoids:
+                    languoids[row['glottocode']].macroarea = row['macroarea']
+
         with open(alias_file, 'r', encoding='utf-8') as f:
             mapping = json.load(f)
         return GlottologDatabase(languoids, mapping)
@@ -104,6 +113,7 @@ class GlottologDatabase:
 def build_database():
     return GlottologDatabase.read(
             os.path.join(DATA_PATH, 'languoid.csv'),
+            os.path.join(DATA_PATH, 'languages_and_dialects_geo.csv'),
             os.path.join(DATA_PATH, 'resourcemap.json'))
 
 
